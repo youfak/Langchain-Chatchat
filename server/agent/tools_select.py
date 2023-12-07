@@ -52,6 +52,11 @@ tools = [
         description="use this tools to search youtube videos",
         args_schema=YoutubeInput,
     ),
+    Tool.from_function(
+        func=ExchangeRateSchema,
+        name="汇率查询工具",
+        description="如果用户输入是汇率相关问题，这个工具可以帮你解答问题",
+    )
 ]
 
 tool_names = [tool.name for tool in tools]

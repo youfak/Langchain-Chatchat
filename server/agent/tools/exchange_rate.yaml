@@ -1,0 +1,10 @@
+name: exchange_rate
+description: Use Exchange API to obtain exchange rate related information
+parameters:
+  type: object
+  properties:
+    query:
+      type: string
+      description: Exchange rate includes currency or numerical value, such as "USD" or "1美元"
+required:
+  - query
