@@ -5,6 +5,6 @@ parameters:
   properties:
     query:
       type: string
-      description: Exchange rate includes currency or numerical value, such as "USD" or "1美元"
+      description: Exchange rate includes currency or numerical value
 required:
   - query

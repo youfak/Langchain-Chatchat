@@ -274,7 +274,7 @@ def exchangerate(query: str):
 
 
 class ExchangeRateSchema(BaseModel):
-    location: str = Field(description="应该是一个汇率转换或换算，用空格隔开，例如：人民币 美元，如果没有数值的信息，可以只输入货币名称，如果有则输入数值和货币名称，例如：1 人民币 美元")
+    location: str = Field(description="应该是一个汇率转换或换算，用空格隔开，例如：人民币 美元，如果没有数值的信息，可以只输入货币名称如:人民币 美元，如果有则输入数值和货币名称，例如：1 人民币 美元")
 
 
 if __name__ == '__main__':
