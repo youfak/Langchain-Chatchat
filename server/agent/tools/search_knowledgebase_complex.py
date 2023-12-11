@@ -3,6 +3,8 @@ import json
 import re
 import warnings
 from typing import Dict
+
+import requests
 from langchain.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
 from langchain.chains.llm import LLMChain
 from langchain.pydantic_v1 import Extra, root_validator
@@ -17,23 +19,25 @@ from server.agent import model_container
 from pydantic import BaseModel, Field
 
 async def search_knowledge_base_iter(database: str, query: str) -> str:
-    response = await knowledge_base_chat(query=query,
-                                         knowledge_base_name=database,
-                                         model_name=model_container.MODEL.model_name,
-                                         temperature=0.01,
-                                         history=[],
-                                         top_k=VECTOR_SEARCH_TOP_K,
-                                         max_tokens=MAX_TOKENS,
-                                         prompt_name="default",
-                                         score_threshold=SCORE_THRESHOLD,
-                                         stream=False)
+    try:
+        response = await knowledge_base_chat(query=query,
+                                             knowledge_base_name=database,
+                                             model_name=model_container.MODEL.model_name,
+                                             temperature=0.01,
+                                             history=[],
+                                             top_k=VECTOR_SEARCH_TOP_K,
+                                             max_tokens=MAX_TOKENS,
+                                             prompt_name="default",
+                                             score_threshold=SCORE_THRESHOLD,
+                                             stream=False)
 
-    contents = ""
-    async for data in response.body_iterator:  # 这里的data是一个json字符串
-        data = json.loads(data)
-        contents += data["answer"]
-        docs = data["docs"]
-    return contents
+        contents = ""
+        async for data in response.body_iterator:  # 这里的data是一个json字符串
+            data = json.loads(data)
+            contents += data["answer"] if 'answer' in data else ""
+        return contents
+    except Exception as e:
+        return str(e)
 
 
 async def search_knowledge_multiple(queries) -> List[str]:

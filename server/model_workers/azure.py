@@ -28,7 +28,7 @@ class AzureWorker(ApiModelWorker):
         data = dict(
             messages=params.messages,
             temperature=params.temperature,
-            max_tokens=params.max_tokens,
+            max_tokens=params.max_tokens if params.max_tokens else None,
             stream=True,
         )
         url = ("https://{}.openai.azure.com/openai/deployments/{}/chat/completions?api-version={}"
