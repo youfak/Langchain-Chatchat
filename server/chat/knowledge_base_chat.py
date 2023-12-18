@@ -59,7 +59,7 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
             query: str,
             top_k: int,
             history: Optional[List[History]],
-            model_name: str = LLM_MODELS[0],
+            model_name: str = model_name,
             prompt_name: str = prompt_name,
     ) -> AsyncIterable[str]:
         nonlocal max_tokens
@@ -73,12 +73,10 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
             max_tokens=max_tokens,
             callbacks=[callback],
         )
-        docs = await run_in_threadpool(search_docs,
-                                       query=query,
-                                       knowledge_base_name=knowledge_base_name,
-                                       top_k=top_k,
-                                       score_threshold=score_threshold)
+        
+        docs = search_docs(query, knowledge_base_name, top_k, score_threshold)
         context = "\n".join([doc.page_content for doc in docs])
+        print(context)
         if len(docs) == 0:  # 如果没有找到相关文档，使用empty模板
             prompt_template = get_prompt_template("knowledge_base_chat", "empty")
         else:
@@ -111,13 +109,19 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
 
         if stream:
             async for token in callback.aiter():
-                # Use server-sent-events to stream the response
-                yield json.dumps({"answer": token}, ensure_ascii=False)
+                if token is not None:
+                    # Use server-sent-events to stream the response
+                    yield json.dumps({"answer": token}, ensure_ascii=False)
+                else:
+                    print("token is None")
             yield json.dumps({"docs": source_documents}, ensure_ascii=False)
         else:
             answer = ""
             async for token in callback.aiter():
-                answer += token
+                if token is not None:
+                    answer += token
+                else:
+                    print("token is None")
             yield json.dumps({"answer": answer,
                               "docs": source_documents},
                              ensure_ascii=False)

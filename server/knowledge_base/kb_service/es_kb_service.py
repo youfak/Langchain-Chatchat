@@ -27,6 +27,7 @@ class ESKBService(KBService):
         self.IP = kbs_config[self.vs_type()]['host']
         self.PORT = kbs_config[self.vs_type()]['port']
         self.user = kbs_config[self.vs_type()].get("user", '')
+        self.dims_length = kbs_config[self.vs_type()].get("dims_length", None)
         self.password = kbs_config[self.vs_type()].get("password", '')
         self.embeddings_model = load_local_embeddings(self.embed_model, EMBEDDING_DEVICE)
         try:

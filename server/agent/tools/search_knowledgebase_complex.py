@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import re
+import traceback
 import warnings
 from typing import Dict
 
@@ -18,18 +19,19 @@ import asyncio
 from server.agent import model_container
 from pydantic import BaseModel, Field
 
+
 async def search_knowledge_base_iter(database: str, query: str) -> str:
     try:
         response = await knowledge_base_chat(query=query,
                                              knowledge_base_name=database,
-                                             model_name=model_container.MODEL.model_name,
-                                             temperature=0.01,
-                                             history=[],
                                              top_k=VECTOR_SEARCH_TOP_K,
-                                             max_tokens=MAX_TOKENS,
-                                             prompt_name="default",
                                              score_threshold=SCORE_THRESHOLD,
-                                             stream=False)
+                                             history=[],
+                                             stream=True,
+                                             model_name=model_container.MODEL.model_name,
+                                             temperature=0.0,
+                                             max_tokens=MAX_TOKENS,
+                                             prompt_name="default")
 
         contents = ""
         async for data in response.body_iterator:  # 这里的data是一个json字符串
@@ -37,6 +39,7 @@ async def search_knowledge_base_iter(database: str, query: str) -> str:
             contents += data["answer"] if 'answer' in data else ""
         return contents
     except Exception as e:
+        print(traceback.format_exc())
         return str(e)
 
 
@@ -170,7 +173,6 @@ class LLMKnowledgeChain(LLMChain):
                                  replace("”", "").replace("```", "").strip())
             lines = cleaned_input_str.split("\n")
             # 使用逗号分割每一行，然后形成一个（数据库，查询）元组的列表
-
             try:
                 queries = [(line.split(",")[0].strip(), line.split(",")[1].strip()) for line in lines]
             except:
@@ -197,7 +199,6 @@ class LLMKnowledgeChain(LLMChain):
         llm_output = llm_output.strip()
         text_match = re.search(r"```text(.*)", llm_output, re.DOTALL)
         if text_match:
-
             expression = text_match.group(1).strip()
             cleaned_input_str = (
                 expression.replace("\"", "").replace("“", "").replace("”", "").replace("```", "").strip())
@@ -208,7 +209,6 @@ class LLMKnowledgeChain(LLMChain):
                 queries = [(line.split("，")[0].strip(), line.split("，")[1].strip()) for line in lines]
             await run_manager.on_text("知识库查询询内容:\n\n" + str(queries) + " \n\n", color="blue",
                                       verbose=self.verbose)
-
             output = self._evaluate_expression(queries)
             await run_manager.on_text("\nAnswer: ", verbose=self.verbose)
             await run_manager.on_text(output, color="yellow", verbose=self.verbose)
@@ -276,8 +276,10 @@ def search_knowledgebase_complex(query: str):
     ans = llm_knowledge.run(query)
     return ans
 
+
 class KnowledgeSearchInput(BaseModel):
     location: str = Field(description="The query to be searched")
+
 
 if __name__ == "__main__":
     result = search_knowledgebase_complex("机器人和大数据在代码教学上有什么区别")
