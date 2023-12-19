@@ -76,7 +76,6 @@ async def knowledge_base_chat(query: str = Body(..., description="用户输入",
 
         docs = search_docs(query, knowledge_base_name, top_k, score_threshold)
         context = "\n".join([doc.page_content for doc in docs])
-        print(context)
         if len(docs) == 0:  # 如果没有找到相关文档，使用empty模板
             prompt_template = get_prompt_template("knowledge_base_chat", "empty")
         else:
