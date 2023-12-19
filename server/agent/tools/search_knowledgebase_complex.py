@@ -28,7 +28,7 @@ async def search_knowledge_base_iter(database: str, query: str) -> str:
                                              score_threshold=SCORE_THRESHOLD,
                                              history=[],
                                              stream=True,
-                                             model_name=model_container.NAME,
+                                             model_name=model_container.LLM_MODEL_NAME,
                                              temperature=0.0,
                                              max_tokens=MAX_TOKENS,
                                              prompt_name="default")

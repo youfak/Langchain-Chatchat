@@ -3,7 +3,7 @@
 class ModelContainer:
     def __init__(self):
         self.MODEL = None
-        self.NAME = None
+        self.LLM_MODEL_NAME = None
         self.DATABASE = None
 
 model_container = ModelContainer()
