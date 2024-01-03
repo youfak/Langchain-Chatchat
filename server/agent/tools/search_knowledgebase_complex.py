@@ -1,11 +1,8 @@
 from __future__ import annotations
 import json
 import re
-import traceback
 import warnings
 from typing import Dict
-
-import requests
 from langchain.callbacks.manager import AsyncCallbackManagerForChainRun, CallbackManagerForChainRun
 from langchain.chains.llm import LLMChain
 from langchain.pydantic_v1 import Extra, root_validator
@@ -14,33 +11,29 @@ from langchain.schema.language_model import BaseLanguageModel
 from typing import List, Any, Optional
 from langchain.prompts import PromptTemplate
 from server.chat.knowledge_base_chat import knowledge_base_chat
-from configs import VECTOR_SEARCH_TOP_K, SCORE_THRESHOLD, MAX_TOKENS, LLM_MODELS
+from configs import VECTOR_SEARCH_TOP_K, SCORE_THRESHOLD, MAX_TOKENS
 import asyncio
 from server.agent import model_container
 from pydantic import BaseModel, Field
 
-
 async def search_knowledge_base_iter(database: str, query: str) -> str:
-    try:
-        response = await knowledge_base_chat(query=query,
-                                             knowledge_base_name=database,
-                                             top_k=VECTOR_SEARCH_TOP_K,
-                                             score_threshold=SCORE_THRESHOLD,
-                                             history=[],
-                                             stream=True,
-                                             model_name=model_container.LLM_MODEL_NAME,
-                                             temperature=0.0,
-                                             max_tokens=MAX_TOKENS,
-                                             prompt_name="default")
+    response = await knowledge_base_chat(query=query,
+                                         knowledge_base_name=database,
+                                         model_name=model_container.LLM_MODEL_NAME,
+                                         temperature=0.01,
+                                         history=[],
+                                         top_k=VECTOR_SEARCH_TOP_K,
+                                         max_tokens=MAX_TOKENS,
+                                         prompt_name="default",
+                                         score_threshold=SCORE_THRESHOLD,
+                                         stream=False)
 
-        contents = ""
-        async for data in response.body_iterator:  # 这里的data是一个json字符串
-            data = json.loads(data)
-            contents += data["answer"] if 'answer' in data else ""
-        return contents
-    except Exception as e:
-        print(traceback.format_exc())
-        return str(e)
+    contents = ""
+    async for data in response.body_iterator:  # 这里的data是一个json字符串
+        data = json.loads(data)
+        contents += data["answer"]
+        docs = data["docs"]
+    return contents
 
 
 async def search_knowledge_multiple(queries) -> List[str]:
@@ -71,12 +64,12 @@ _PROMPT_TEMPLATE = """
 对于每个知识库，你输出的内容应该是一个一行的字符串，这行字符串包含知识库名称和查询内容，中间用逗号隔开，不要有多余的文字和符号。你可以同时查询多个知识库，下面这个例子就是同时查询两个知识库的内容。
 
 例子:
-test_doc,腾讯
 
+robotic,机器人男女比例是多少
+bigdata,大数据的就业情况如何 
 
 
 这些数据库是你能访问的，冒号之前是他们的名字，冒号之后是他们的功能，你应该参考他们的功能来帮助你思考
-
 
 
 {database_names}
@@ -88,28 +81,11 @@ Question: ${{用户的问题}}
 
 ```text
 ${{知识库名称,查询问题,不要带有任何除了,之外的符号,比如不要输出中文的逗号，不要输出引号}}
-```
-...search_knowledgebase_complex(test_doc,腾讯)...
 
 ```output
+数据库查询的结果
 
-${{提取后的答案}}
-```
-答案: ${{答案}}
-
-这是一个例子：
-问题: 腾讯
-```text
-test_doc,腾讯
-```
-...search_knowledgebase_complex(test_doc,腾讯)...
-
-```output
-腾讯是一家中国企业公司，总部在深圳，外号企鹅帝国。
-
-Answer: 腾讯是一家中国企业公司，总部在深圳，外号企鹅帝国。
-
-现在，这是我的问题
+现在，我们开始作答
 问题: {question}
 """
 
@@ -181,14 +157,15 @@ class LLMKnowledgeChain(LLMChain):
         run_manager.on_text(llm_output, color="green", verbose=self.verbose)
 
         llm_output = llm_output.strip()
-        text_match = re.search(r"^```text(.*?)```", llm_output, re.DOTALL)
-        # text_match = re.search(r"```text(.*)", llm_output, re.DOTALL)
+        # text_match = re.search(r"^```text(.*?)```", llm_output, re.DOTALL)
+        text_match = re.search(r"```text(.*)", llm_output, re.DOTALL)
         if text_match:
             expression = text_match.group(1).strip()
             cleaned_input_str = (expression.replace("\"", "").replace("“", "").
                                  replace("”", "").replace("```", "").strip())
             lines = cleaned_input_str.split("\n")
             # 使用逗号分割每一行，然后形成一个（数据库，查询）元组的列表
+
             try:
                 queries = [(line.split(",")[0].strip(), line.split(",")[1].strip()) for line in lines]
             except:
@@ -215,6 +192,7 @@ class LLMKnowledgeChain(LLMChain):
         llm_output = llm_output.strip()
         text_match = re.search(r"```text(.*)", llm_output, re.DOTALL)
         if text_match:
+
             expression = text_match.group(1).strip()
             cleaned_input_str = (
                 expression.replace("\"", "").replace("“", "").replace("”", "").replace("```", "").strip())
@@ -225,6 +203,7 @@ class LLMKnowledgeChain(LLMChain):
                 queries = [(line.split("，")[0].strip(), line.split("，")[1].strip()) for line in lines]
             await run_manager.on_text("知识库查询询内容:\n\n" + str(queries) + " \n\n", color="blue",
                                       verbose=self.verbose)
+
             output = self._evaluate_expression(queries)
             await run_manager.on_text("\nAnswer: ", verbose=self.verbose)
             await run_manager.on_text(output, color="yellow", verbose=self.verbose)
@@ -292,10 +271,8 @@ def search_knowledgebase_complex(query: str):
     ans = llm_knowledge.run(query)
     return ans
 
-
 class KnowledgeSearchInput(BaseModel):
     location: str = Field(description="The query to be searched")
-
 
 if __name__ == "__main__":
     result = search_knowledgebase_complex("机器人和大数据在代码教学上有什么区别")

@@ -5,5 +5,6 @@ class ModelContainer:
         self.MODEL = None
         self.LLM_MODEL_NAME = None
         self.DATABASE = None
+        self.LLM_MODEL_NAME = None
 
 model_container = ModelContainer()
