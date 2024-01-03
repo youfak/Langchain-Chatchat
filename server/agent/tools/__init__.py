@@ -10,3 +10,4 @@ from .wolfram import wolfram, WolframInput
 from .search_youtube import search_youtube, YoutubeInput
 from .arxiv import arxiv, ArxivInput
 from .exchange_rate import exchangerate,ExchangeRateSchema
+from .search_yellow_pages import search_yellow_pages, YellowPagesInput

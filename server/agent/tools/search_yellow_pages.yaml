@@ -1,0 +1,10 @@
+name: search_yellow_pages
+description: Use this tools to Search Yellow Pages data
+parameters:
+  type: object
+  properties:
+    query:
+      type: string
+      description: Yellow pages data search query
+required:
+  - query

@@ -144,6 +144,7 @@ async def agent_chat(query: str = Body(..., description="用户输入", examples
                     tools_use.append("工具状态: " + "调用成功")
                     tools_use.append("工具输入: " + data["input_str"])
                     tools_use.append("工具输出: " + data["output_str"])
+                    # tools_use.append("内容来源: " + data["tails"] if 'tails' in data else '---未知来源\n')
                     tools_use.append("\n```\n")
                     yield json.dumps({"tools": tools_use}, ensure_ascii=False)
                 elif data["status"] == Status.agent_finish:
@@ -172,6 +173,7 @@ async def agent_chat(query: str = Body(..., description="用户输入", examples
                     answer += "工具状态: " + "调用成功" + "\n"
                     answer += "工具输入: " + data["input_str"] + "\n"
                     answer += "工具输出: " + data["output_str"] + "\n"
+                    # answer += "内容来源: " + data["tails"] if 'tails' in data else '---未知来源' + "\n"
                     answer += "\n```\n"
                 if data["status"] == Status.agent_finish:
                     final_answer = data["final_answer"]
